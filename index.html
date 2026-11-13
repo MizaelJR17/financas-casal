@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f766e">
+<title>Finanças do Casal</title>
+<style>
+  :root { --bg:#f5f7f6; --card:#fff; --text:#13201d; --muted:#64716e; --primary:#0f766e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0d1413; --card:#151f1d; --text:#e6eeec; --muted:#94a3a0; --primary:#14b8a6; } }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--text);
+         font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:16px; box-sizing:border-box; }
+  .card { background:var(--card); border-radius:16px; padding:2rem; max-width:380px; width:100%; text-align:center; box-shadow:0 2px 12px #0001; }
+  h1 { font-size:1.3rem; margin:0 0 .5rem; } p { color:var(--muted); margin:.4rem 0; }
+  .spin { width:28px; height:28px; border:3px solid #0002; border-top-color:var(--primary); border-radius:50%; margin:1rem auto; animation:s 1s linear infinite; }
+  @keyframes s { to { transform:rotate(360deg); } }
+  button { margin-top:1rem; background:var(--primary); color:#fff; border:0; border-radius:8px; padding:.6rem 1.2rem; font:inherit; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>💳 Finanças do Casal</h1>
+  <div id="spin" class="spin"></div>
+  <p id="msg">Conectando…</p>
+  <button id="retry" hidden onclick="go()">Tentar de novo</button>
+</div>
+<script>
+const REPO = 'MizaelJR17/financas-casal';
+const msg = (t) => (document.getElementById('msg').textContent = t);
+async function currentLink() {
+  // API do GitHub (sem cache) e, se falhar, o arquivo publicado no Pages.
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/contents/link.txt?t=${Date.now()}`, { headers: { Accept: 'application/vnd.github.raw' }, cache: 'no-store' });
+    if (r.ok) return (await r.text()).trim();
+  } catch {}
+  const r = await fetch(`link.txt?t=${Date.now()}`, { cache: 'no-store' });
+  return (await r.text()).trim();
+}
+async function go() {
+  document.getElementById('retry').hidden = true; document.getElementById('spin').hidden = false; msg('Conectando…');
+  try {
+    const link = await currentLink();
+    if (!/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(link)) throw new Error('link');
+    const ctrl = new AbortController(); setTimeout(() => ctrl.abort(), 12000);
+    const r = await fetch(link + '/api/ping', { signal: ctrl.signal, cache: 'no-store' });
+    if (!r.ok) throw new Error('offline');
+    location.replace(link + location.hash);
+  } catch {
+    document.getElementById('spin').hidden = true; document.getElementById('retry').hidden = false;
+    msg('O sistema está offline agora — provavelmente o computador de casa está desligado ou sem internet. Tente mais tarde.');
+  }
+}
+go();
+</script>
+</body>
+</html>
